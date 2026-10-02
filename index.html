@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BackBrain</title>
+<style>
+body{margin:0;background:#080a0d;color:#d8dde3;font-family:Arial,Helvetica,sans-serif}
+header{padding:28px 7%;border-bottom:1px solid #242a31;background:#0d1014}
+.logo{font-size:34px;font-weight:800;letter-spacing:2px}.tag{color:#78818c;margin-top:5px}
+main{max-width:1100px;margin:45px auto;padding:0 24px}
+.search{display:flex;gap:10px}.search input{flex:1;background:#11151a;border:1px solid #3a424c;color:white;padding:17px;font-size:17px}.search button{background:#d8dde3;color:#0b0d10;border:0;padding:0 25px;font-weight:bold;cursor:pointer}
+.note{color:#68727d;font-size:13px;margin:12px 0 30px}
+.results{display:grid;gap:12px}.result{background:#101419;border:1px solid #242b33;padding:18px}.type{font-size:11px;color:#77828e;text-transform:uppercase;letter-spacing:1px}.title{font-size:20px;margin:7px 0}.desc{color:#9da6b0;line-height:1.45}.result small{color:#59636e}.result mark{background:#d8dde3;color:#080a0d;padding:1px 3px;border-radius:2px}
+footer{max-width:1100px;margin:60px auto;padding:25px 24px;color:#4e5862;font-size:12px;border-top:1px solid #20262d}
+</style>
+</head>
+<body>
+<header><div class="logo">BACKBRAIN</div><div class="tag">THE WORLD'S INFORMATION NETWORK</div></header>
+<main>
+<div class="search"><input id="q" placeholder="Search the BackBrain..." autocomplete="off"><button onclick="search()">SEARCH</button></div>
+<div class="note">Information is not organized. Search terms may produce incomplete, duplicated, or unrelated records.</div>
+<div id="results"></div>
+</main>
+
+<script>
+const records=[
+{type:"SCYTHE RECORD",title:"Scythe Eleanor Voss",text:"A respected regional Scythe. Known for elaborate ceremonies and unusually selective gleanings. Several records concerning her final years are incomplete.",keys:["eleanor","voss","scythe"]},
+{type:"JOURNAL",title:"Personal Journal — A. Merrin, 7th Year",text:"A brief entry describing a Scythe who believed fear was more useful than mercy. The name has been partially damaged.",keys:["merrin","journal","fear"]},
+{type:"PLACE",title:"Lucifer's Hollow",text:"An old mountain pass. The name predates several modern records. No verified connection to any Scythe.",keys:["lucifer","hollow","mountain"]},
+{type:"SCYTHE RECORD",title:"Scythe Marcus Vale",text:"Known for public charity and a large number of gleanings. BackBrain contains conflicting accounts of his treatment of those he gleaned.",keys:["marcus","vale","scythe","gleaning"]},
+{type:"NEWS ARCHIVE",title:"Incident at Northbridge",text:"An archived report concerning a missing Scythe. Most of the original article is unavailable.",keys:["northbridge","missing","scythe"]},
+{type:"BOOK",title:"The Ethics of Gleaning",text:"A commonly referenced text discussing the responsibilities of Scythes and the limits of personal judgment.",keys:["ethics","gleaning","book"]},
+{type:"SCYTHE RECORD",title:"Scythe Adrian Bell",text:"Formerly celebrated for an unusually low gleaning count. Later records describe disputes with several other Scythes.",keys:["adrian","bell","scythe"]},
+{type:"PERSON",title:"Lucifer — Historical Name",text:"A name appearing in thousands of unrelated records, including mythology, literature, places, and personal names.",keys:["lucifer","name","history"]},
+{type:"ARCHIVED NOTE",title:"Unverified Witness Statement",text:"A witness reported seeing a dark cloak near a Scythe residence shortly before a recorded death. Identity unconfirmed.",keys:["cloak","witness","death"]},
+{type:"SCYTHE RECORD",title:"Scythe Helena Marr",text:"A former Scythe remembered differently by different communities. Her philosophy emphasized consequences over reputation.",keys:["helena","marr","scythe","philosophy"]},
+{type:"MAP",title:"Old District Map — West 12",text:"Street names and boundaries from before the district was rebuilt. Several buildings no longer exist.",keys:["map","west","12"]},
+{type:"DOCUMENT",title:"Gleaning Ledger Fragment",text:"A damaged list of names. Several entries are crossed out. The document cannot be reliably dated.",keys:["ledger","gleaning","names"]}
+];
+
+function score(r,q){
+ let s=0; const terms=q.toLowerCase().split(/\s+/).filter(Boolean);
+ for(const t of terms){for(const k of r.keys){if(k.includes(t)||t.includes(k))s+=3} if(r.title.toLowerCase().includes(t))s+=2;if(r.text.toLowerCase().includes(t))s++}
+ return s;
+}
+function search(){
+ const q=document.getElementById("q").value.trim();
+ if(!q){const terms=q.toLowerCase().split(/\s+/).filter(Boolean);
+ const highlight=(text)=>{
+   let out=text;
+   for(const term of terms){
+     if(!term) continue;
+     const escaped=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+     out=out.replace(new RegExp('('+escaped+')','gi'),'<mark>$1</mark>');
+   }
+   return out;
+ };
+ document.getElementById("results").innerHTML="<div class='result'><div class='title'>No search entered.</div><div class='desc'>BackBrain contains too much information to browse manually. Try a name, place, concept, or event.</div></div>";return}
+ let ranked=records.map(r=>({r,s:score(r,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);
+ // Keep the database feeling messy: insert a few weak/random records.
+ if(ranked.length>3){
+   const extras=records.filter(r=>!ranked.some(x=>x.r===r)).sort(()=>Math.random()-.5).slice(0,2);
+   ranked=[...ranked,...extras.map(r=>({r,s:0}))];
+   ranked.sort((a,b)=>b.s-a.s);
+ }
+ if(q.toLowerCase().includes("lucifer") && q.toLowerCase().includes("scythe")){
+   ranked.unshift({r:{type:"RESTRICTED FRAGMENT",title:"Record Fragment: L-17",text:"[DATA CORRUPTED] ...subject repeatedly selected targets with prior documented violations of Scythe conduct... [END FRAGMENT]",keys:[]},s:99});
+ }
+ document.getElementById("results").innerHTML=ranked.slice(0,9).map(x=>`<div class="result"><div class="type">${x.r.type}</div><div class="title">${highlight(x.r.title)}</div><div class="desc">${x.r.text}</div><small>Relevance: ${x.s>5?"high":x.s>0?"partial":"unknown"}</small></div>`).join("");
+}
+document.getElementById("q").addEventListener("keydown",e=>{if(e.key==="Enter")search()});
+</script>
+</body>
+</html>
