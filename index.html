@@ -1,41 +1,956 @@
 <!DOCTYPE html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BackBrain</title>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BackBrain — Scythe Archives</title>
+
 <style>
-:root{--bg:#080a0d;--panel:#101419;--line:#28313a;--text:#d8dde3;--muted:#83909d;--accent:#d8dde3}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,Helvetica,sans-serif}header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:25px 7%;border-bottom:1px solid var(--line);background:#0d1014}.logo{font-size:34px;font-weight:800;letter-spacing:2px}.tag{color:var(--muted);margin-top:5px}.admin-button{background:transparent;color:#9aa5af;border:1px solid #39424b;padding:9px 12px;cursor:pointer;font-size:18px}.admin-button:hover{background:#1b2229}main{max-width:1100px;margin:45px auto;padding:0 24px}.search{display:flex;gap:10px}.search input{min-width:0;flex:1;background:#11151a;border:1px solid #3a424c;color:white;padding:17px;font-size:17px}.search button,.primary{background:var(--accent);color:#0b0d10;border:0;padding:0 25px;font-weight:bold;cursor:pointer}.note{color:#68727d;font-size:13px;margin:12px 0 30px}.results{display:grid;gap:12px}.result{background:var(--panel);border:1px solid #242b33;padding:18px;cursor:pointer}.result:hover{border-color:#7c8995}.type{font-size:11px;color:#77828e;text-transform:uppercase;letter-spacing:1px}.title{font-size:20px;margin:7px 0}.desc{color:#9da6b0;line-height:1.5}.result small{color:#59636e}.result mark{background:#d8dde3;color:#080a0d;padding:1px 3px;border-radius:2px}.empty{color:var(--muted);padding:20px;border:1px solid var(--line)}.modal{position:fixed;inset:0;background:#000b;display:none;align-items:center;justify-content:center;padding:18px;z-index:10}.box{background:#101419;border:1px solid #3a424c;padding:24px;width:min(760px,100%);max-height:90vh;overflow:auto}.box h2{margin-top:0}.box p{line-height:1.6;color:#b7c0c8}.box label{display:block;color:#9da6b0;font-size:13px;margin:12px 0 5px}.box input,.box textarea,.box select{width:100%;background:#090c0f;color:#e4e8ec;border:1px solid #39434d;padding:11px;font:inherit}.box textarea{min-height:100px;resize:vertical}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}.actions button{padding:10px 14px;cursor:pointer;border:1px solid #424c56;background:#20272e;color:#e4e8ec}.actions .primary{background:#d8dde3;color:#090b0e}.danger{color:#ffaaaa!important}.bio-meta{color:#7e8a96;font-size:12px;text-transform:uppercase;letter-spacing:1px}.bio-section{border-top:1px solid #273039;padding-top:12px;margin-top:16px}.close{float:right;background:transparent;border:1px solid #424c56;color:#d8dde3;padding:6px 10px;cursor:pointer}.hidden{display:none!important}.admin-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}@media(max-width:600px){header{padding:20px;align-items:flex-start}.logo{font-size:27px}.search{flex-direction:column}.search button{padding:14px}.admin-grid{grid-template-columns:1fr}}
-</style></head><body>
-<header><div><div class="logo">BACKBRAIN</div><div class="tag">THE WORLD'S INFORMATION NETWORK</div></div><button class="admin-button" title="Database access" aria-label="Database access" onclick="openGate()">▤</button></header>
-<main><div class="search"><input id="q" placeholder="Search the BackBrain..." autocomplete="off"><button onclick="searchRecords()">SEARCH</button></div><div class="note">Information is not organized. Search terms may produce incomplete, duplicated, or unrelated records.</div><div id="results" class="results"></div></main>
-<div id="gate" class="modal"><div class="box" style="max-width:420px"><button class="close" onclick="closeModal('gate')">CLOSE</button><h2>DATABASE ACCESS</h2><p>Enter access code.</p><input id="code" type="password" inputmode="numeric" placeholder="Access code"><div class="actions"><button class="primary" onclick="checkCode()">UNLOCK</button></div><p id="gateError" class="danger"></p></div></div>
-<div id="admin" class="modal"><div class="box"><button class="close" onclick="closeModal('admin')">CLOSE</button><h2>BACKBRAIN — RECORD MANAGEMENT</h2><p>Changes made here are saved in this browser. They won't automatically sync to other players' devices on GitHub Pages.</p><div class="admin-grid"><div><label>Record title</label><input id="fTitle" placeholder="Scythe name or document title"></div><div><label>Record type</label><input id="fType" placeholder="SCYTHE RECORD, JOURNAL, MAP..."></div><div><label>Search keywords (comma separated)</label><input id="fKeys" placeholder="scythe, name, place"></div><div><label>Short result description</label><input id="fText" placeholder="Shown in search results"></div></div><label>Full biography / record</label><textarea id="fBio" placeholder="Long biography, history, gleaning record, relationships, journal entries..."></textarea><div class="actions"><button class="primary" onclick="saveRecord()">SAVE NEW RECORD</button><button onclick="clearForm()">CLEAR FORM</button></div><div class="bio-section"><h3>Existing records</h3><div id="adminList"></div></div></div></div>
-<div id="detail" class="modal"><div class="box"><button class="close" onclick="closeModal('detail')">CLOSE</button><div id="detailContent"></div></div></div>
+:root {
+    --bg: #090b0e;
+    --panel: #11151b;
+    --panel2: #171d25;
+    --border: #29313b;
+    --text: #dce3eb;
+    --muted: #818d9b;
+    --green: #9bc8a7;
+    --red: #c76e6e;
+    --yellow: #e3c77b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 14px;
+}
+
+header {
+    padding: 24px;
+    border-bottom: 1px solid var(--border);
+    background: #0d1015;
+}
+
+.top {
+    max-width: 1100px;
+    margin: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.logo {
+    font-size: 32px;
+    font-weight: bold;
+    letter-spacing: 4px;
+}
+
+.subtitle {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 7px;
+    letter-spacing: 2px;
+}
+
+button, input, textarea, select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.admin-button {
+    background: transparent;
+    color: var(--green);
+    border: 1px solid var(--green);
+    padding: 10px 14px;
+}
+
+.admin-button:hover {
+    background: #1a2a21;
+}
+
+main {
+    max-width: 1100px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.warning {
+    color: var(--yellow);
+    font-size: 12px;
+    border-left: 3px solid var(--yellow);
+    padding: 10px 14px;
+    background: #17150f;
+    margin-bottom: 25px;
+}
+
+.search-label {
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+}
+
+.search-row {
+    display: flex;
+    gap: 10px;
+}
+
+input, textarea, select {
+    width: 100%;
+    background: #0c1015;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 13px;
+    outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: var(--green);
+}
+
+textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.search-row button, .primary {
+    background: var(--green);
+    color: #101710;
+    border: none;
+    padding: 0 22px;
+    font-weight: bold;
+}
+
+.section-heading {
+    margin: 35px 0 15px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.results {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+}
+
+.record {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 17px;
+    text-align: left;
+    color: var(--text);
+    width: 100%;
+    min-height: 150px;
+    transition: border-color .15s, background .15s;
+}
+
+.record:hover {
+    border-color: var(--green);
+    background: var(--panel2);
+}
+
+.record-type {
+    color: var(--green);
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 13px;
+}
+
+.record h3 {
+    margin: 0 0 12px;
+    font-size: 17px;
+}
+
+.record p {
+    color: var(--muted);
+    line-height: 1.6;
+    margin: 0;
+}
+
+mark {
+    color: #111;
+    background: var(--yellow);
+}
+
+.empty {
+    color: var(--muted);
+    border: 1px dashed var(--border);
+    padding: 30px;
+    text-align: center;
+    grid-column: 1 / -1;
+}
+
+footer {
+    max-width: 1100px;
+    margin: 50px auto 25px;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    color: #505b68;
+    font-size: 11px;
+    text-align: center;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0,0,0,.82);
+    overflow-y: auto;
+    padding: 25px 12px;
+}
+
+.overlay.open {
+    display: block;
+}
+
+.dialog {
+    max-width: 760px;
+    margin: 30px auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 25px;
+}
+
+.dialog-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+    margin-bottom: 20px;
+}
+
+.dialog h2 {
+    margin: 8px 0;
+    font-size: 25px;
+}
+
+.close {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 12px;
+}
+
+.detail-body {
+    white-space: pre-wrap;
+    line-height: 1.9;
+    color: #c6d0dc;
+    overflow-wrap: anywhere;
+}
+
+.metadata {
+    margin-top: 25px;
+    border-top: 1px solid var(--border);
+    padding-top: 15px;
+    color: var(--muted);
+    line-height: 1.8;
+    font-size: 12px;
+}
+
+.admin-record {
+    border: 1px solid var(--border);
+    padding: 14px;
+    margin: 10px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+}
+
+.admin-record strong {
+    display: block;
+    margin-bottom: 6px;
+}
+
+.admin-record small {
+    color: var(--muted);
+}
+
+.actions {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+}
+
+.small-button {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: 8px 10px;
+}
+
+.delete-button {
+    color: var(--red);
+    border-color: var(--red);
+}
+
+.form-field {
+    margin: 17px 0;
+}
+
+.form-field label {
+    display: block;
+    color: var(--muted);
+    font-size: 11px;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-buttons button {
+    padding: 12px 16px;
+}
+
+.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.hidden {
+    display: none !important;
+}
+
+@media(max-width: 550px) {
+    .logo { font-size: 24px; }
+    header { padding: 18px 12px; }
+    main { padding: 0 12px; }
+    .dialog { padding: 16px; }
+    .admin-record { align-items: flex-start; flex-direction: column; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="top">
+        <div>
+            <div class="logo">BACKBRAIN</div>
+            <div class="subtitle">THE SCYTHE ARCHIVES // INFORMATION TERMINAL</div>
+        </div>
+
+        <button class="admin-button" id="adminButton">⚙ ADMIN</button>
+    </div>
+</header>
+
+<main id="home">
+    <div class="warning">
+        DATABASE STATUS: UNSTABLE // RECORDS MAY BE INCOMPLETE, MISFILED, OR CONTRADICTORY.
+    </div>
+
+    <div class="search-label">SEARCH THE ARCHIVES</div>
+
+    <div class="search-row">
+        <input id="searchInput" type="search"
+               placeholder="Search names, places, records, journals..."
+               autocomplete="off">
+        <button id="searchButton">SEARCH</button>
+    </div>
+
+    <div class="section-heading">
+        <span id="resultLabel">RECENTLY ACCESSED RECORDS</span>
+        <span id="resultCount"></span>
+    </div>
+
+    <div class="results" id="results"></div>
+</main>
+
+<main id="adminPage" class="hidden">
+    <div class="section-heading">
+        <span>ADMINISTRATOR TERMINAL</span>
+        <button class="small-button" id="exitAdmin">EXIT ADMIN</button>
+    </div>
+
+    <div class="warning">
+        CHANGES MADE HERE ARE SAVED IN THIS BROWSER ONLY.
+    </div>
+
+    <button class="primary" id="addRecord" style="padding:12px 18px">
+        + CREATE NEW RECORD
+    </button>
+
+    <div class="section-heading">
+        <span>DATABASE RECORDS</span>
+        <span id="adminCount"></span>
+    </div>
+
+    <div id="adminRecords"></div>
+</main>
+
+<footer>
+    BACKBRAIN ARCHIVAL NETWORK // DATA INTEGRITY NOT GUARANTEED
+</footer>
+
+<div class="overlay" id="detailOverlay">
+    <div class="dialog">
+        <div class="dialog-top">
+            <div>
+                <div class="record-type" id="detailType"></div>
+                <h2 id="detailTitle"></h2>
+            </div>
+            <button class="close" id="closeDetail">CLOSE ✕</button>
+        </div>
+
+        <div class="detail-body" id="detailBody"></div>
+
+        <div class="metadata" id="detailMetadata"></div>
+    </div>
+</div>
+
+<div class="overlay" id="formOverlay">
+    <div class="dialog">
+        <div class="dialog-top">
+            <div>
+                <div class="record-type">DATABASE MANAGEMENT</div>
+                <h2 id="formHeading">Create Record</h2>
+            </div>
+            <button class="close" id="closeForm">CANCEL ✕</button>
+        </div>
+
+        <form id="recordForm">
+            <div class="form-field">
+                <label for="recordTitle">RECORD TITLE</label>
+                <input id="recordTitle" required maxlength="160">
+            </div>
+
+            <div class="form-field">
+                <label for="recordType">RECORD CATEGORY</label>
+                <select id="recordType">
+                    <option>Scythe Biography</option>
+                    <option>Journal Entry</option>
+                    <option>Incident Report</option>
+                    <option>News Article</option>
+                    <option>Historical Record</option>
+                    <option>Person</option>
+                    <option>Location</option>
+                    <option>Book</option>
+                    <option>Rumor</option>
+                    <option>Other</option>
+                </select>
+            </div>
+
+            <div class="form-field">
+                <label for="recordSummary">SHORT SUMMARY</label>
+                <textarea id="recordSummary" required
+                          placeholder="A short preview shown in search results..."></textarea>
+            </div>
+
+            <div class="form-field">
+                <label for="recordBody">FULL RECORD / BIOGRAPHY</label>
+                <textarea id="recordBody" required
+                          style="min-height:220px"
+                          placeholder="Write the full biography, journal, report, or other information here..."></textarea>
+            </div>
+
+            <div class="form-field">
+                <label for="recordKeywords">SEARCH KEYWORDS (SEPARATE WITH COMMAS)</label>
+                <input id="recordKeywords"
+                       placeholder="Example: MidMerica, investigation, 2045">
+            </div>
+
+            <div class="form-buttons">
+                <button class="primary" type="submit">SAVE RECORD</button>
+                <button class="secondary" type="button" id="cancelForm">CANCEL</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
-const initialRecords=[
-{id:'eleanor-voss',type:'SCYTHE RECORD',title:'Scythe Eleanor Voss',text:'A respected regional Scythe. Known for elaborate ceremonies and unusually selective gleanings. Records from her final years are incomplete.',keys:['eleanor','voss','scythe'],bio:'Eleanor Voss cultivated a reputation for calm judgment and elaborate public ceremonies. Her early career was praised in several regional archives, though later accounts become less consistent.\n\nGLEANING PHILOSOPHY\nVoss wrote that a Scythe should never confuse popularity with justice. Her own records, however, do not always explain why particular people were selected.\n\nRELATIONSHIPS\nShe corresponded with several Scythes in the southern districts. Some letters are missing from the surviving archive.\n\nRECORD STATUS\nIncomplete. Cross-check her gleaning ledger and the Northbridge archive.'},
-{id:'merrin-journal',type:'JOURNAL',title:'Personal Journal — A. Merrin, 7th Year',text:'A brief entry describing a Scythe who believed fear was more useful than mercy. The name has been partially damaged.',keys:['merrin','journal','fear'],bio:'Recovered from a collection of personal papers. The entry is dated only as “the seventh year.”\n\n“Mercy is what they call it when the consequences belong to someone else. Fear is honest. At least fear admits what it is.”\n\nThe following page is missing. A name at the bottom of the page has been scratched out.'},
-{id:'lucifers-hollow',type:'PLACE',title:"Lucifer's Hollow",text:'An old mountain pass. The name predates several modern records. No verified connection to any Scythe.',keys:['lucifer','hollow','mountain'],bio:'Lucifer’s Hollow appears on maps from several different periods. The origin of the name is disputed; some local histories claim it was named after a miner, while others describe an older folktale.\n\nA travel ledger mentions a closed road near the pass, but the date and location are uncertain.'},
-{id:'marcus-vale',type:'SCYTHE RECORD',title:'Scythe Marcus Vale',text:'Known for public charity and a large number of gleanings. BackBrain contains conflicting accounts of his treatment of those he gleaned.',keys:['marcus','vale','scythe','gleaning'],bio:'Marcus Vale became famous for funding shelters, public gardens, and community halls. Public speeches described him as a Scythe who took his duties seriously.\n\nGLEANING HISTORY\nVale’s recorded gleaning count was unusually high for his region. The surviving public records describe many of his selections as necessary, but provide little supporting detail.\n\nCONTROVERSIES\nSeveral private accounts accuse Vale of treating criticism as disloyalty. Other sources dismiss these claims as rumors spread by his rivals.\n\nRELATIONSHIPS\nVale exchanged letters with Scythe Adrian Bell. The letters referenced in Bell’s journal are not present in Vale’s public file.\n\nDEATH RECORD\nThe record is incomplete. Search “Vale ledger” and “Bell correspondence” for related documents.'},
-{id:'northbridge',type:'NEWS ARCHIVE',title:'Incident at Northbridge',text:'An archived report concerning a missing Scythe. Most of the original article is unavailable.',keys:['northbridge','missing','scythe'],bio:'The surviving news index records an incident at Northbridge involving a missing Scythe. Early reports disagree about the date and whether the residence showed signs of forced entry.\n\nSeveral follow-up articles were filed under unrelated neighborhood records. The original reporter’s notes have not been located.'},
-{id:'ethics-gleaning',type:'BOOK',title:'The Ethics of Gleaning',text:'A commonly referenced text discussing the responsibilities of Scythes and the limits of personal judgment.',keys:['ethics','gleaning','book'],bio:'A frequently cited work on the responsibilities of Scythes. Different editions contain different introductions, and some quotations attributed to the book cannot be found in surviving copies.\n\nThe central argument concerns the difference between a rule being followed and a decision being just. The book does not offer a simple test for distinguishing the two.'},
-{id:'adrian-bell',type:'SCYTHE RECORD',title:'Scythe Adrian Bell',text:'Formerly celebrated for an unusually low gleaning count. Later records describe disputes with several other Scythes.',keys:['adrian','bell','scythe'],bio:'Adrian Bell was known for a restrained approach to gleaning and a habit of keeping detailed private notes. Early profiles praised Bell’s patience. Later records mention several heated disputes with fellow Scythes.\n\nPHILOSOPHY\nBell argued that every gleaning should withstand scrutiny after the fact. His own private notes were not included in the official profile.\n\nRELATED RECORDS\nLook for “Vale correspondence,” “Merrin journal,” and “West 12 archive.”'},
-{id:'lucifer-name',type:'PERSON / REFERENCE',title:'Lucifer — Historical Name',text:'A name appearing in thousands of unrelated records, including mythology, literature, places, and personal names.',keys:['lucifer','name','history'],bio:'This entry is a disambiguation record, not a profile of a single person. The name appears in mythology, literature, old place names, and personal records. Many search results containing this word have no connection to one another.'},
-{id:'witness-statement',type:'ARCHIVED NOTE',title:'Unverified Witness Statement',text:'A witness reported seeing a dark cloak near a Scythe residence shortly before a recorded death. Identity unconfirmed.',keys:['cloak','witness','death'],bio:'The witness statement was copied into an archive without a confirmed identity. The witness described a dark cloak near a residence, but could not provide a face, name, or reliable time. The original interview notes are missing.'},
-{id:'helena-marr',type:'SCYTHE RECORD',title:'Scythe Helena Marr',text:'A former Scythe remembered differently by different communities. Her philosophy emphasized consequences over reputation.',keys:['helena','marr','scythe','philosophy'],bio:'Helena Marr believed a Scythe’s reputation should never substitute for evidence. Some communities remember her as fair; others considered her unforgiving.\n\nHer gleaning records contain several unusually detailed explanations, alongside other entries with almost no explanation at all. A complete journal has never been found.'},
-{id:'west-map',type:'MAP',title:'Old District Map — West 12',text:'Street names and boundaries from before the district was rebuilt. Several buildings no longer exist.',keys:['map','west','12'],bio:'An old map showing district boundaries before redevelopment. Handwritten notes in the margins name several buildings that do not appear in later maps. One annotation appears to point to a former Scythe residence, but the street name has changed.'},
-{id:'ledger-fragment',type:'DOCUMENT',title:'Gleaning Ledger Fragment',text:'A damaged list of names. Several entries are crossed out. The document cannot be reliably dated.',keys:['ledger','gleaning','names'],bio:'This fragment contains a list of names, dates, and short notes. Several entries have been crossed out, and the document’s origin is unknown. The surviving handwriting is consistent across most of the page, except for three additions in a different ink.'}
+const starterRecords = [
+    {
+        id: "scythe-001",
+        title: "Scythe Marlowe — Official Biography",
+        type: "Scythe Biography",
+        summary: "A respected MidMerican scythe. Several details in the public record remain unclear.",
+        body: `PUBLIC BIOGRAPHY
+
+Scythe Marlowe was ordained after completing the standard apprenticeship and evaluation process. Official records describe Marlowe as disciplined, observant, and committed to the principles of the Scythedom.
+
+PROFESSIONAL HISTORY
+
+Marlowe served in several regional assignments and attended multiple conclaves. The surviving public files contain gaps in the dates surrounding one reassignment.
+
+PERSONAL NOTES
+
+A complete personal history is not available in the current archive. Some records refer to private correspondence that has not been located.
+
+ARCHIVAL COMMENT
+
+This biography has been assembled from several records. Not every detail has been independently confirmed.`,
+        keywords: "Marlowe, biography, MidMerica, scythe, conclave"
+    },
+    {
+        id: "report-014",
+        title: "Incident Report 014-B",
+        type: "Incident Report",
+        summary: "An archived report concerning missing documents and conflicting witness statements.",
+        body: `INCIDENT REPORT 014-B
+
+LOCATION: Regional administrative office
+STATUS: Incomplete
+CLASSIFICATION: Internal
+
+SUMMARY
+
+Staff discovered that several files were missing from a locked records room. The office reported no obvious signs of forced entry.
+
+WITNESS STATEMENTS
+
+Two employees remembered seeing a visitor near the records room. Their descriptions differed on the visitor's clothing and approximate time of arrival.
+
+FOLLOW-UP
+
+A review was requested. The available archive does not include the final findings.
+
+NOTE
+
+This report may refer to other records filed under the date of the incident rather than the incident number.`,
+        keywords: "incident, missing files, investigation, witness, office"
+    },
+    {
+        id: "journal-022",
+        title: "Private Journal — Fragment 22",
+        type: "Journal Entry",
+        summary: "A torn journal page discussing a conclave, an argument, and an unusual request.",
+        body: `FRAGMENT 22
+
+The conclave ended later than expected. Everyone insisted the disagreement had been resolved, but nobody seemed willing to discuss what had actually happened.
+
+I was asked to sign a document I had not been allowed to read in full.
+
+Perhaps this is ordinary procedure. Perhaps I have simply been in the archives too long.
+
+There is a name I keep seeing in the margins of unrelated reports. I cannot tell whether it is a coincidence or whether someone wants me to notice.
+
+The next page is missing.`,
+        keywords: "journal, conclave, document, missing page, private"
+    },
+    {
+        id: "news-008",
+        title: "MidMerica Gazette — Regional Update",
+        type: "News Article",
+        summary: "A short news item about an administrative review and changes to regional assignments.",
+        body: `MIDMERICA GAZETTE
+REGIONAL UPDATE
+
+Officials announced an internal review of several regional assignments. The announcement did not identify the scythes involved.
+
+A spokesperson said the review was routine and that normal operations would continue.
+
+The Gazette requested copies of the review's findings. At the time of this article, no documents had been released.
+
+ARCHIVE NOTE
+
+A later newspaper index references this story using a different headline. The original publication has not yet been found.`,
+        keywords: "news, Gazette, regional assignments, review, newspaper"
+    },
+    {
+        id: "place-003",
+        title: "Old District Records Office",
+        type: "Location",
+        summary: "A former records facility mentioned in several unrelated documents.",
+        body: `LOCATION FILE: OLD DISTRICT RECORDS OFFICE
+
+The facility was used to store administrative papers, historical correspondence, and regional records.
+
+Several references place the building near an older transit route. Maps disagree about the exact entrance.
+
+An inventory lists shelves of unindexed folders, damaged boxes, and multiple copies of documents whose originals are missing.
+
+CURRENT STATUS
+
+The archive does not contain a reliable inspection report or a complete inventory of the remaining files.`,
+        keywords: "location, records office, building, map, archives, folders"
+    },
+    {
+        id: "book-019",
+        title: "Collected Rules of the Scythedom",
+        type: "Book",
+        summary: "A reference volume containing rules, annotations, and handwritten corrections.",
+        body: `COLLECTED RULES OF THE SCYTHEDOM
+
+This reference volume contains printed regulations alongside handwritten annotations added by several unknown readers.
+
+Some pages contain conflicting notes about procedure. The handwriting changes throughout the book, and not all annotations appear to come from the same period.
+
+The table of contents references two appendices that are absent from this copy.
+
+ARCHIVAL COMMENT
+
+Researchers should compare this edition with other copies before treating an annotation as an official rule.`,
+        keywords: "book, rules, Scythedom, regulations, reference, annotations"
+    }
 ];
-let records=loadRecords(); let selectedId=null;
-function loadRecords(){try{const saved=localStorage.getItem('backbrainRecordsV2');if(saved)return JSON.parse(saved)}catch(e){}return initialRecords.map(x=>({...x}))}
-function persist(){localStorage.setItem('backbrainRecordsV2',JSON.stringify(records))}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function highlight(text,q){let safe=esc(text);const terms=q.trim().split(/\s+/).filter(Boolean).sort((a,b)=>b.length-a.length);for(const term of terms){const t=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');safe=safe.replace(new RegExp('('+t+')','gi'),'<mark>$1</mark>')}return safe}
-function score(r,q){let s=0;for(const t of q.toLowerCase().split(/\s+/).filter(Boolean)){for(const k of r.keys||[])if(k.includes(t)||t.includes(k))s+=3;if(r.title.toLowerCase().includes(t))s+=2;if((r.text+' '+(r.bio||'')).toLowerCase().includes(t))s++}return s}
-function searchRecords(){const q=document.getElementById('q').value.trim();const box=document.getElementById('results');if(!q){box.innerHTML='<div class="empty">Enter a search term. Names, places, events, and even partial phrases may help.</div>';return}let ranked=records.map(r=>({r,s:score(r,q)})).filter(x=>x.s>0).sort((a,b)=>b.s-a.s);if(ranked.length>2){const extras=records.filter(r=>!ranked.some(x=>x.r.id===r.id)).sort(()=>Math.random()-.5).slice(0,Math.min(2,records.length-ranked.length));ranked.push(...extras.map(r=>({r,s:0})));}if(q.toLowerCase().includes('lucifer')&&q.toLowerCase().includes('scythe'))ranked.unshift({r:{id:'fragment-l17',type:'RESTRICTED FRAGMENT',title:'Record Fragment: L-17',text:'[DATA CORRUPTED] ...subject repeatedly selected targets with prior documented violations of Scythe conduct... [END FRAGMENT]',bio:'The fragment is incomplete. “Subject repeatedly selected targets with prior documented violations of Scythe conduct.” The source and author are missing.',keys:[]},s:99});if(!ranked.length){box.innerHTML='<div class="empty">No clear match. Try fewer words, a surname, a place, or a related term. BackBrain records are often filed under unexpected labels.</div>';return}box.innerHTML=ranked.slice(0,12).map(({r,s})=>`<article class="result" role="button" tabindex="0" onclick="openRecord('${esc(r.id)}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecord('${esc(r.id)}')}"><div class="type">${esc(r.type)}</div><div class="title">${highlight(r.title,q)}</div><div class="desc">${esc(r.text)}</div><small>Relevance: ${s>5?'high':s>0?'partial':'unknown'} · Open record ↗</small></article>`).join('')}
-function openRecord(id){const r=records.find(x=>x.id===id)|| (id==='fragment-l17'?{type:'RESTRICTED FRAGMENT',title:'Record Fragment: L-17',text:'[DATA CORRUPTED]',bio:'The fragment is incomplete. “Subject repeatedly selected targets with prior documented violations of Scythe conduct.” The source and author are missing.'}:null);if(!r)return;document.getElementById('detailContent').innerHTML=`<div class="bio-meta">${esc(r.type)}</div><h2>${esc(r.title)}</h2><p>${esc(r.text)}</p><div class="bio-section"><h3>FULL RECORD</h3>${(r.bio||'No extended record has been recovered.').split('\n\n').map(p=>`<p>${esc(p).replace(/\n/g,'<br>')}</p>`).join('')}</div><div class="bio-section"><div class="bio-meta">INDEX TERMS</div><p>${(r.keys||[]).map(esc).join(' · ')||'No index terms recorded.'}</p></div>`;document.getElementById('detail').style.display='flex'}
-function openGate(){document.getElementById('gate').style.display='flex';document.getElementById('code').value='';document.getElementById('gateError').textContent='';setTimeout(()=>document.getElementById('code').focus(),50)}function closeModal(id){document.getElementById(id).style.display='none'}function checkCode(){if(document.getElementById('code').value==='1727'){closeModal('gate');renderAdminList();document.getElementById('admin').style.display='flex'}else document.getElementById('gateError').textContent='ACCESS DENIED'}
-function clearForm(){selectedId=null;['fTitle','fType','fKeys','fText','fBio'].forEach(id=>document.getElementById(id).value='');document.querySelector('#admin .primary').textContent='SAVE NEW RECORD'}
-function saveRecord(){const title=document.getElementById('fTitle').value.trim();if(!title){alert('Please enter a record title.');return}const obj={id:selectedId||('custom-'+Date.now()),title,type:document.getElementById('fType').value.trim()||'ARCHIVE RECORD',keys:document.getElementById('fKeys').value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean),text:document.getElementById('fText').value.trim()||'No summary available.',bio:document.getElementById('fBio').value.trim()||'No extended record has been recovered.'};const i=records.findIndex(r=>r.id===obj.id);if(i>=0)records[i]=obj;else records.push(obj);persist();clearForm();renderAdminList();searchRecords()}
-function editRecord(id){const r=records.find(x=>x.id===id);if(!r)return;selectedId=id;document.getElementById('fTitle').value=r.title;document.getElementById('fType').value=r.type;document.getElementById('fKeys').value=(r.keys||[]).join(', ');document.getElementById('fText').value=r.text;document.getElementById('fBio').value=r.bio||'';document.querySelector('#admin .primary').textContent='SAVE CHANGES';document.querySelector('#fTitle').scrollIntoView({behavior:'smooth',block:'center'})}
-function deleteRecord(id){const r=records.find(x=>x.id===id);if(!r||!confirm('Delete “'+r.title+'”?'))return;records=records.filter(x=>x.id!==id);persist();if(selectedId===id)clearForm();renderAdminList();searchRecords()}
-function renderAdminList(){document.getElementById('adminList').innerHTML=records.map(r=>`<div class="result"><div class="title">${esc(r.title)}</div><div class="actions"><button onclick="editRecord('${esc(r.id)}')">EDIT</button><button class="danger" onclick="deleteRecord('${esc(r.id)}')">DELETE</button></div></div>`).join('')}
-document.getElementById('q').addEventListener('keydown',e=>{if(e.key==='Enter')searchRecords()});document.getElementById('code').addEventListener('keydown',e=>{if(e.key==='Enter')checkCode()});
-</script></body></html>
+
+const STORAGE_KEY = "backbrain_records_v1";
+
+let records = loadRecords();
+let editingId = null;
+let currentSearch = "";
+
+function loadRecords() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed)) return parsed;
+        }
+    } catch (error) {
+        console.error("Could not load saved records.", error);
+    }
+
+    return starterRecords.map(record => ({...record}));
+}
+
+function saveRecords() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        return true;
+    } catch (error) {
+        alert("Could not save records in this browser. Check your browser storage settings.");
+        return false;
+    }
+}
+
+function escapeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, character => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[character]);
+}
+
+function highlightText(text, query) {
+    const container = document.createElement("span");
+    const source = String(text ?? "");
+
+    if (!query.trim()) {
+        container.textContent = source;
+        return container;
+    }
+
+    const lowerSource = source.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    let position = 0;
+
+    while (position < source.length) {
+        const found = lowerSource.indexOf(lowerQuery, position);
+
+        if (found === -1) {
+            container.appendChild(
+                document.createTextNode(source.slice(position))
+            );
+            break;
+        }
+
+        if (found > position) {
+            container.appendChild(
+                document.createTextNode(source.slice(position, found))
+            );
+        }
+
+        const mark = document.createElement("mark");
+        mark.textContent = source.slice(found, found + query.length);
+        container.appendChild(mark);
+
+        position = found + query.length;
+    }
+
+    return container;
+}
+
+function matchesRecord(record, query) {
+    if (!query.trim()) return true;
+
+    const searchable = [
+        record.title,
+        record.type,
+        record.summary,
+        record.body,
+        record.keywords
+    ].join(" ").toLowerCase();
+
+    return searchable.includes(query.toLowerCase());
+}
+
+function renderResults() {
+    const query = document.getElementById("searchInput").value.trim();
+    currentSearch = query;
+
+    const filtered = records.filter(record => matchesRecord(record, query));
+    const results = document.getElementById("results");
+
+    results.replaceChildren();
+
+    document.getElementById("resultLabel").textContent =
+        query ? "SEARCH RESULTS" : "RECENTLY ACCESSED RECORDS";
+
+    document.getElementById("resultCount").textContent =
+        filtered.length + " RECORD" + (filtered.length === 1 ? "" : "S");
+
+    if (filtered.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "NO MATCHING RECORDS FOUND. TRY ANOTHER SEARCH.";
+        results.appendChild(empty);
+        return;
+    }
+
+    filtered.forEach(record => {
+        const button = document.createElement("button");
+        button.className = "record";
+        button.type = "button";
+
+        const type = document.createElement("div");
+        type.className = "record-type";
+        type.textContent = record.type;
+
+        const title = document.createElement("h3");
+        title.appendChild(highlightText(record.title, query));
+
+        const summary = document.createElement("p");
+        summary.textContent = record.summary;
+
+        button.append(type, title, summary);
+        button.addEventListener("click", () => openDetail(record.id));
+
+        results.appendChild(button);
+    });
+}
+
+function openDetail(id) {
+    const record = records.find(item => item.id === id);
+    if (!record) return;
+
+    document.getElementById("detailType").textContent = record.type;
+    document.getElementById("detailTitle").textContent = record.title;
+    document.getElementById("detailBody").textContent = record.body;
+    document.getElementById("detailMetadata").textContent =
+        "RECORD ID: " + record.id +
+        "\nSEARCH KEYWORDS: " + (record.keywords || "None listed");
+
+    document.getElementById("detailOverlay").classList.add("open");
+}
+
+function closeDetail() {
+    document.getElementById("detailOverlay").classList.remove("open");
+}
+
+function showHome() {
+    document.getElementById("home").classList.remove("hidden");
+    document.getElementById("adminPage").classList.add("hidden");
+    renderResults();
+}
+
+function enterAdmin() {
+    const code = prompt("ENTER ADMIN ACCESS CODE:");
+
+    if (code === null) return;
+
+    if (code !== "1727") {
+        alert("ACCESS DENIED.");
+        return;
+    }
+
+    document.getElementById("home").classList.add("hidden");
+    document.getElementById("adminPage").classList.remove("hidden");
+    renderAdmin();
+}
+
+function exitAdmin() {
+    showHome();
+}
+
+function renderAdmin() {
+    const container = document.getElementById("adminRecords");
+    container.replaceChildren();
+
+    document.getElementById("adminCount").textContent =
+        records.length + " TOTAL";
+
+    if (records.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "NO RECORDS IN DATABASE.";
+        container.appendChild(empty);
+        return;
+    }
+
+    records.forEach(record => {
+        const row = document.createElement("div");
+        row.className = "admin-record";
+
+        const info = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = record.title;
+
+        const type = document.createElement("small");
+        type.textContent = record.type + " // ID: " + record.id;
+
+        info.append(title, type);
+
+        const actions = document.createElement("div");
+        actions.className = "actions";
+
+        const edit = document.createElement("button");
+        edit.className = "small-button";
+        edit.textContent = "EDIT";
+        edit.addEventListener("click", () => startEdit(record.id));
+
+        const remove = document.createElement("button");
+        remove.className = "small-button delete-button";
+        remove.textContent = "DELETE";
+        remove.addEventListener("click", () => deleteRecord(record.id));
+
+        actions.append(edit, remove);
+        row.append(info, actions);
+        container.appendChild(row);
+    });
+}
+
+function startNewRecord() {
+    editingId = null;
+    document.getElementById("formHeading").textContent = "Create Record";
+    document.getElementById("recordForm").reset();
+    document.getElementById("formOverlay").classList.add("open");
+}
+
+function startEdit(id) {
+    const record = records.find(item => item.id === id);
+    if (!record) return;
+
+    editingId = id;
+
+    document.getElementById("formHeading").textContent = "Edit Record";
+    document.getElementById("recordTitle").value = record.title;
+    document.getElementById("recordType").value = record.type;
+    document.getElementById("recordSummary").value = record.summary;
+    document.getElementById("recordBody").value = record.body;
+    document.getElementById("recordKeywords").value = record.keywords || "";
+
+    document.getElementById("formOverlay").classList.add("open");
+}
+
+function closeForm() {
+    document.getElementById("formOverlay").classList.remove("open");
+    editingId = null;
+}
+
+function deleteRecord(id) {
+    const record = records.find(item => item.id === id);
+    if (!record) return;
+
+    if (!confirm('Delete "' + record.title + '" permanently from this browser?')) {
+        return;
+    }
+
+    const previous = records;
+    records = records.filter(item => item.id !== id);
+
+    if (saveRecords()) {
+        renderAdmin();
+        renderResults();
+    } else {
+        records = previous;
+    }
+}
+
+document.getElementById("recordForm").addEventListener("submit", event => {
+    event.preventDefault();
+
+    const data = {
+        title: document.getElementById("recordTitle").value.trim(),
+        type: document.getElementById("recordType").value,
+        summary: document.getElementById("recordSummary").value.trim(),
+        body: document.getElementById("recordBody").value.trim(),
+        keywords: document.getElementById("recordKeywords").value.trim()
+    };
+
+    if (!data.title || !data.summary || !data.body) {
+        alert("Please fill in the title, summary, and full record.");
+        return;
+    }
+
+    const previous = records.map(record => ({...record}));
+
+    if (editingId) {
+        const index = records.findIndex(record => record.id === editingId);
+        if (index !== -1) {
+            records[index] = {...records[index], ...data};
+        }
+    } else {
+        records.unshift({
+            id: "record-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+            ...data
+        });
+    }
+
+    if (!saveRecords()) {
+        records = previous;
+        return;
+    }
+
+    closeForm();
+    renderAdmin();
+    renderResults();
+
+    alert("RECORD SAVED.");
+});
+
+document.getElementById("adminButton").addEventListener("click", enterAdmin);
+document.getElementById("exitAdmin").addEventListener("click", exitAdmin);
+document.getElementById("addRecord").addEventListener("click", startNewRecord);
+document.getElementById("closeDetail").addEventListener("click", closeDetail);
+document.getElementById("closeForm").addEventListener("click", closeForm);
+document.getElementById("cancelForm").addEventListener("click", closeForm);
+document.getElementById("searchButton").addEventListener("click", renderResults);
+
+document.getElementById("searchInput").addEventListener("keydown", event => {
+    if (event.key === "Enter") renderResults();
+});
+
+document.getElementById("searchInput").addEventListener("input", renderResults);
+
+document.getElementById("detailOverlay").addEventListener("click", event => {
+    if (event.target.id === "detailOverlay") closeDetail();
+});
+
+document.getElementById("formOverlay").addEventListener("click", event => {
+    if (event.target.id === "formOverlay") closeForm();
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+        closeDetail();
+        closeForm();
+    }
+});
+
+renderResults();
+</script>
+
+</body>
+</html>
