@@ -368,7 +368,7 @@ footer {
     </div>
 
     <div class="section-heading">
-        <span id="resultLabel">RECENTLY ACCESSED RECORDS</span>
+        <span id="resultLabel">SEARCH THE ARCHIVES</span>
         <span id="resultCount"></span>
     </div>
 
@@ -382,7 +382,7 @@ footer {
     </div>
 
     <div class="warning">
-        CHANGES MADE HERE ARE SAVED IN THIS BROWSER ONLY.
+        CHANGES HERE ARE SAVED TO THE SHARED ARCHIVE.
     </div>
 
     <button class="primary" id="addRecord" style="padding:12px 18px">
@@ -603,34 +603,80 @@ Researchers should compare this edition with other copies before treating an ann
     }
 ];
 
-const STORAGE_KEY = "backbrain_records_v1";
+// Supabase connection. The publishable key is intended for browser use.
+const SUPABASE_URL = "https://tqjxqaqictokttejwegw.supabase.co";
+const SUPABASE_KEY = "sb_publishable_w_h0Y65E5YM2RpJ7DXrdDQ_ep1Dh0Ul";
+const RECORDS_ENDPOINT = `${SUPABASE_URL}/rest/v1/records`;
 
-let records = loadRecords();
+let records = [];
 let editingId = null;
 let currentSearch = "";
 
-function loadRecords() {
-    try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            if (Array.isArray(parsed)) return parsed;
+async function dbRequest(url, options = {}) {
+    const response = await fetch(url, {
+        ...options,
+        headers: {
+            "apikey": SUPABASE_KEY,
+            "Authorization": `Bearer ${SUPABASE_KEY}`,
+            "Content-Type": "application/json",
+            ...(options.headers || {})
         }
-    } catch (error) {
-        console.error("Could not load saved records.", error);
+    });
+
+    if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(`Database request failed (${response.status}): ${detail}`);
     }
 
-    return starterRecords.map(record => ({...record}));
+    if (response.status === 204) return null;
+    const text = await response.text();
+    return text ? JSON.parse(text) : null;
 }
 
-function saveRecords() {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-        return true;
-    } catch (error) {
-        alert("Could not save records in this browser. Check your browser storage settings.");
-        return false;
+function mapDatabaseRecord(row) {
+    return {
+        id: row.id,
+        title: row.title || "Untitled record",
+        type: row.type || row.category || "Other",
+        summary: row.summary || "",
+        body: row.body || row.content || "",
+        keywords: row.keywords || ""
+    };
+}
+
+function databasePayload(record) {
+    return {
+        title: record.title,
+        category: record.type || "Other",
+        type: record.type || "Other",
+        summary: record.summary || "",
+        body: record.body || "",
+        content: record.body || "",
+        keywords: record.keywords || ""
+    };
+}
+
+async function loadRecords() {
+    const rows = await dbRequest(`${RECORDS_ENDPOINT}?select=*&order=id.asc`);
+
+    // Populate the shared database with the six example records only if it is empty.
+    if (rows.length === 0) {
+        const seedPayload = starterRecords.map(record => databasePayload(record));
+        await dbRequest(RECORDS_ENDPOINT, {
+            method: "POST",
+            headers: { "Prefer": "return=representation" },
+            body: JSON.stringify(seedPayload)
+        });
     }
+
+    const latestRows = await dbRequest(`${RECORDS_ENDPOINT}?select=*&order=id.asc`);
+    records = latestRows.map(mapDatabaseRecord);
+    renderResults();
+}
+
+async function refreshRecords() {
+    const rows = await dbRequest(`${RECORDS_ENDPOINT}?select=*&order=id.asc`);
+    records = rows.map(mapDatabaseRecord);
 }
 
 function escapeHTML(value) {
@@ -874,26 +920,29 @@ function closeForm() {
     editingId = null;
 }
 
-function deleteRecord(id) {
-    const record = records.find(item => item.id === id);
+async function deleteRecord(id) {
+    const record = records.find(item => String(item.id) === String(id));
     if (!record) return;
 
-    if (!confirm('Delete "' + record.title + '" permanently from this browser?')) {
+    if (!confirm('Delete "' + record.title + '" permanently from the shared archive?')) {
         return;
     }
 
-    const previous = records;
-    records = records.filter(item => item.id !== id);
-
-    if (saveRecords()) {
+    try {
+        await dbRequest(`${RECORDS_ENDPOINT}?id=eq.${encodeURIComponent(id)}`, {
+            method: "DELETE"
+        });
+        await refreshRecords();
         renderAdmin();
         renderResults();
-    } else {
-        records = previous;
+        alert("RECORD DELETED FROM THE SHARED ARCHIVE.");
+    } catch (error) {
+        console.error(error);
+        alert("Could not delete the record. Check the Supabase table and policies, then try again.");
     }
 }
 
-document.getElementById("recordForm").addEventListener("submit", event => {
+document.getElementById("recordForm").addEventListener("submit", async event => {
     event.preventDefault();
 
     const data = {
@@ -909,30 +958,37 @@ document.getElementById("recordForm").addEventListener("submit", event => {
         return;
     }
 
-    const previous = records.map(record => ({...record}));
+    const saveButton = document.querySelector('#recordForm button[type="submit"]');
+    saveButton.disabled = true;
+    saveButton.textContent = "SAVING...";
 
-    if (editingId) {
-        const index = records.findIndex(record => record.id === editingId);
-        if (index !== -1) {
-            records[index] = {...records[index], ...data};
+    try {
+        if (editingId !== null) {
+            await dbRequest(`${RECORDS_ENDPOINT}?id=eq.${encodeURIComponent(editingId)}`, {
+                method: "PATCH",
+                headers: { "Prefer": "return=minimal" },
+                body: JSON.stringify(databasePayload(data))
+            });
+        } else {
+            await dbRequest(RECORDS_ENDPOINT, {
+                method: "POST",
+                headers: { "Prefer": "return=minimal" },
+                body: JSON.stringify(databasePayload(data))
+            });
         }
-    } else {
-        records.unshift({
-            id: "record-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7),
-            ...data
-        });
+
+        await refreshRecords();
+        closeForm();
+        renderAdmin();
+        renderResults();
+        alert("RECORD SAVED TO THE SHARED ARCHIVE.");
+    } catch (error) {
+        console.error(error);
+        alert("Could not save the record to Supabase. Check your connection and database policies. Details are in the browser console.");
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "SAVE RECORD";
     }
-
-    if (!saveRecords()) {
-        records = previous;
-        return;
-    }
-
-    closeForm();
-    renderAdmin();
-    renderResults();
-
-    alert("RECORD SAVED.");
 });
 
 document.getElementById("adminButton").addEventListener("click", enterAdmin);
@@ -965,6 +1021,15 @@ document.addEventListener("keydown", event => {
 });
 
 renderResults();
+loadRecords().catch(error => {
+    console.error(error);
+    const results = document.getElementById("results");
+    results.replaceChildren();
+    const message = document.createElement("div");
+    message.className = "empty";
+    message.textContent = "COULD NOT CONNECT TO THE SHARED ARCHIVE. CHECK SUPABASE SETTINGS AND DATABASE POLICIES.";
+    results.appendChild(message);
+});
 </script>
 
 </body>
